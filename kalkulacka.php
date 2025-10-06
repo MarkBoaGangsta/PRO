@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <title>Jednoduchá kalkulačka</title>
+    <title>Kalkulačka s databázou</title>
 </head>
 <body>
 <h2>Kalkulačka</h2>
@@ -23,11 +23,25 @@
 
 <?php
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Pripojenie k databáze
+    $servername = "localhost";
+    $username = "root";       // zmeň podľa svojho nastavenia
+    $password = "";           // zmeň podľa svojho nastavenia
+    $dbname = "kalkulacka_db";
+
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    if ($conn->connect_error) {
+        die("Chyba pripojenia: " . $conn->connect_error);
+    }
+
+    // Vstupy z formulára
     $cislo1 = floatval($_POST["cislo1"]);
     $cislo2 = floatval($_POST["cislo2"]);
     $operacia = $_POST["operacia"];
-    $vysledok = null;
+    $vysledok = "";
 
+    // Výpočet
     switch ($operacia) {
         case "plus":
             $vysledok = $cislo1 + $cislo2;
@@ -46,10 +60,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
             break;
         default:
-            $vysledok = "Neplatná operácia!";
+            $vysledok = "Neznáma operácia";
     }
 
+    // Výpis výsledku
     echo "<h3>Výsledok: $vysledok</h3>";
+
+    // Uloženie do databázy
+    $stmt = $conn->prepare("INSERT INTO vypocty (cislo1, cislo2, operacia, vysledok) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ddss", $cislo1, $cislo2, $operacia, $vysledok);
+    $stmt->execute();
+    $stmt->close();
+    $conn->close();
 }
 ?>
 </body>
